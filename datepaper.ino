@@ -1,3 +1,7 @@
+#include <avr/sleep.h>
+#include <avr/power.h>
+#include <avr/wdt.h>
+
 #include <Wire.h>
 #include <RTClib.h>
 
@@ -11,6 +15,7 @@
 				(EPD::WIDTH / 8))
 
 #define DEF_FONT		u8g2_font_osb41_tr
+#define HEAD_FONT		u8g2_font_osb21_tr
 #define SYMBOL_FONT		u8g2_font_open_iconic_human_6x_t
 
 GxEPD2_3C<GxEPD2_154c, MAX_HEIGHT_3C(GxEPD2_154c)> display(
@@ -25,37 +30,64 @@ RTC_DS3231 rtc;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
 void show();
-void draw(const char text[], const uint8_t *font, uint16_t color,
-		 uint8_t x, uint8_t y);
+void showXmas();
+void showNewYear();
+void showBday();
+void myWatchdogEnable(const byte interval);
+
+ISR(WDT_vect)
+{
+	wdt_disable();
+}
 
 void setup(void)
 {
-	Serial.begin(57600);
-	Serial.println();
-	Serial.println("setup");
-	delay(100);
-
 	display.init(57600);
 	display.setRotation(1);
 	display.fillScreen(GxEPD_WHITE);
 
 	u8g2Fonts.begin(display);
+
+	delay(100);
+	/* showXmas(); */
+	/* delay(1000); */
+	showNewYear();
+	delay(1000);
+	showBday();
+	delay(1000);
 }
 
 void loop()
 {
 	show();
-	delay(1000);
+
 	display.powerOff();
 	display.hibernate();
+
+	// 10800 * 8s = 1d
+	// sleep for a total of 64 seconds
+	for (int i = 0; i < 8; i++)
+		myWatchdogEnable (0b100001);  // 8 seconds
+
+	sleep_disable();
+	power_all_enable();
+}
+
+void draw(const char text[], const uint8_t *font, uint16_t color,
+		 uint8_t x, uint8_t y)
+{
+	u8g2Fonts.setCursor(x, y);
+	u8g2Fonts.setForegroundColor(color);
+	u8g2Fonts.setFont(font);
+	u8g2Fonts.print(text);
 }
 
 void show()
 {
-	/* DateTime now = rtc.now(); */
-	/* char Time[10]; */
+	DateTime now = rtc.now();
+	char Time[5];
 
-	/* sprintf(Time, "%d:%d:%d", now.hour(), now.minute(), now.second()); */
+	sprintf(Time, "%d:%d", now.minute(), now.second());
 
 	u8g2Fonts.setFontMode(1);
 	u8g2Fonts.setFontDirection(0);
@@ -68,17 +100,101 @@ void show()
 	do {
 		display.fillScreen(GxEPD_WHITE);
 		draw("BBBB", SYMBOL_FONT, GxEPD_RED, 5, 48);
-		draw("12345", DEF_FONT, GxEPD_RED, 20, 115);
-		draw("BBBB", SYMBOL_FONT, GxEPD_RED, 5, 190);
+		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw("BBBB", SYMBOL_FONT, GxEPD_RED, 5, 192);
 	} while (display.nextPage());
-
 }
 
-void draw(const char text[], const uint8_t *font, uint16_t color,
-		 uint8_t x, uint8_t y)
+void showXmas()
 {
-	u8g2Fonts.setCursor(x, y);
-	u8g2Fonts.setForegroundColor(color);
-	u8g2Fonts.setFont(font);
-	u8g2Fonts.print(text);
+	DateTime now = rtc.now();
+	char Time[5];
+
+	sprintf(Time, "%d:%d", now.minute(), now.second());
+
+	u8g2Fonts.setFontMode(1);
+	u8g2Fonts.setFontDirection(0);
+	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
+	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+
+	display.firstPage();
+
+	do {
+		display.fillScreen(GxEPD_WHITE);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 48);
+		draw("happy", HEAD_FONT, GxEPD_BLACK, 63, 34);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 48);
+		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 192);
+		draw("Xmas", HEAD_FONT, GxEPD_BLACK, 67, 178);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 192);
+	} while (display.nextPage());
 }
+
+void showNewYear()
+{
+	DateTime now = rtc.now();
+	char Time[5];
+
+	sprintf(Time, "%d:%d", now.minute(), now.second());
+
+	u8g2Fonts.setFontMode(1);
+	u8g2Fonts.setFontDirection(0);
+	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
+	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+
+	display.firstPage();
+
+	do {
+		display.fillScreen(GxEPD_WHITE);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 48);
+		draw("happy", HEAD_FONT, GxEPD_BLACK, 63, 34);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 48);
+		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 192);
+		draw("new", HEAD_FONT, GxEPD_BLACK, 75, 158);
+		draw("year", HEAD_FONT, GxEPD_BLACK, 73, 188);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 192);
+	} while (display.nextPage());
+}
+
+void showBday()
+{
+	DateTime now = rtc.now();
+	char Time[5];
+
+	sprintf(Time, "%d:%d", now.minute(), now.second());
+
+	u8g2Fonts.setFontMode(1);
+	u8g2Fonts.setFontDirection(0);
+	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
+	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+
+	display.firstPage();
+
+	do {
+		display.fillScreen(GxEPD_WHITE);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 48);
+		draw("happy", HEAD_FONT, GxEPD_BLACK, 63, 34);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 48);
+		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 192);
+		draw("bday", HEAD_FONT, GxEPD_BLACK, 73, 178);
+		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 192);
+	} while (display.nextPage());
+}
+
+void myWatchdogEnable(const byte interval)
+{ 
+	MCUSR = 0;                          // reset various flags
+	WDTCSR |= 0b00011000;               // see docs, set WDCE, WDE
+	WDTCSR =  0b01000000 | interval;    // set WDIE, and appropriate delay
+
+	wdt_reset();
+	power_adc_disable();
+	power_spi_disable();
+	power_timer0_disable();
+	power_timer2_disable();
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE); 
+	sleep_mode();
+} 
