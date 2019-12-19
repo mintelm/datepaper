@@ -29,11 +29,15 @@ GxEPD2_3C<GxEPD2_154c, MAX_HEIGHT_3C(GxEPD2_154c)> display(
 RTC_DS3231 rtc;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
+const DateTime theDay (2018, 6, 18, 0, 0, 0);
+
 void show();
-void showXmas();
-void showNewYear();
-void showBday();
+void showDef(char days[]);
+void showXmas(char days[]);
+void showNewYear(char days[]);
+void showBday(char days[]);
 void myWatchdogEnable(const byte interval);
+int getOffsetToCenter(char days[]);
 
 ISR(WDT_vect)
 {
@@ -47,14 +51,6 @@ void setup(void)
 	display.fillScreen(GxEPD_WHITE);
 
 	u8g2Fonts.begin(display);
-
-	delay(100);
-	/* showXmas(); */
-	/* delay(1000); */
-	showNewYear();
-	delay(1000);
-	showBday();
-	delay(1000);
 }
 
 void loop()
@@ -65,8 +61,7 @@ void loop()
 	display.hibernate();
 
 	// 10800 * 8s = 1d
-	// sleep for a total of 64 seconds
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < 10800; i++)
 		myWatchdogEnable (0b100001);  // 8 seconds
 
 	sleep_disable();
@@ -85,10 +80,23 @@ void draw(const char text[], const uint8_t *font, uint16_t color,
 void show()
 {
 	DateTime now = rtc.now();
-	char Time[5];
+	TimeSpan ts = now - theDay;
+	char days[5];
 
-	sprintf(Time, "%d:%d", now.minute(), now.second());
+	sprintf(days, "%d", ts.days());
 
+	if (now.month() == 12 && now.day() == 24)
+		showXmas(days);
+	else if (now.month() == 1 && now.day() == 1)
+		showNewYear(days);
+	else if (now.month() == 6 && now.day() == 18)
+		showBday(days);
+	else
+		showDef(days);
+}
+
+void showDef(char days[])
+{
 	u8g2Fonts.setFontMode(1);
 	u8g2Fonts.setFontDirection(0);
 	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
@@ -100,18 +108,13 @@ void show()
 	do {
 		display.fillScreen(GxEPD_WHITE);
 		draw("BBBB", SYMBOL_FONT, GxEPD_RED, 5, 48);
-		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw(days, DEF_FONT, GxEPD_BLACK, getOffsetToCenter(days), 115);
 		draw("BBBB", SYMBOL_FONT, GxEPD_RED, 5, 192);
 	} while (display.nextPage());
 }
 
-void showXmas()
+void showXmas(char days[])
 {
-	DateTime now = rtc.now();
-	char Time[5];
-
-	sprintf(Time, "%d:%d", now.minute(), now.second());
-
 	u8g2Fonts.setFontMode(1);
 	u8g2Fonts.setFontDirection(0);
 	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
@@ -124,20 +127,15 @@ void showXmas()
 		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 48);
 		draw("happy", HEAD_FONT, GxEPD_BLACK, 63, 34);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 48);
-		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw(days, DEF_FONT, GxEPD_BLACK, getOffsetToCenter(days), 115);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 192);
 		draw("Xmas", HEAD_FONT, GxEPD_BLACK, 67, 178);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 192);
 	} while (display.nextPage());
 }
 
-void showNewYear()
+void showNewYear(char days[])
 {
-	DateTime now = rtc.now();
-	char Time[5];
-
-	sprintf(Time, "%d:%d", now.minute(), now.second());
-
 	u8g2Fonts.setFontMode(1);
 	u8g2Fonts.setFontDirection(0);
 	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
@@ -150,7 +148,7 @@ void showNewYear()
 		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 48);
 		draw("happy", HEAD_FONT, GxEPD_BLACK, 63, 34);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 48);
-		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw(days, DEF_FONT, GxEPD_BLACK, getOffsetToCenter(days), 115);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 192);
 		draw("new", HEAD_FONT, GxEPD_BLACK, 75, 158);
 		draw("year", HEAD_FONT, GxEPD_BLACK, 73, 188);
@@ -158,13 +156,8 @@ void showNewYear()
 	} while (display.nextPage());
 }
 
-void showBday()
+void showBday(char days[])
 {
-	DateTime now = rtc.now();
-	char Time[5];
-
-	sprintf(Time, "%d:%d", now.minute(), now.second());
-
 	u8g2Fonts.setFontMode(1);
 	u8g2Fonts.setFontDirection(0);
 	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
@@ -177,7 +170,7 @@ void showBday()
 		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 48);
 		draw("happy", HEAD_FONT, GxEPD_BLACK, 63, 34);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 48);
-		draw(Time, DEF_FONT, GxEPD_BLACK, 20, 115);
+		draw(days, DEF_FONT, GxEPD_BLACK, getOffsetToCenter(days), 115);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 5, 192);
 		draw("bday", HEAD_FONT, GxEPD_BLACK, 73, 178);
 		draw("B", SYMBOL_FONT, GxEPD_RED, 147, 192);
@@ -198,3 +191,13 @@ void myWatchdogEnable(const byte interval)
 	set_sleep_mode(SLEEP_MODE_PWR_SAVE); 
 	sleep_mode();
 } 
+
+int getOffsetToCenter(char days[])
+{
+	if (strlen(days) > 4)
+		return 17;
+	else if (strlen(days) > 3)
+		return 34;
+	else
+		return 51;
+}
