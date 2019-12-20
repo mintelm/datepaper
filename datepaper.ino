@@ -30,6 +30,8 @@ RTC_DS3231 rtc;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
 const DateTime theDay (2018, 6, 18, 0, 0, 0);
+// 10800 * 8s = 1d
+int limit = 10800;
 
 void show();
 void showDef(char days[]);
@@ -46,6 +48,17 @@ ISR(WDT_vect)
 
 void setup(void)
 {
+	DateTime now = rtc.now();
+	int limit_reducer = 0;
+
+	// reduce limit of first loop once
+	// to make sure interrupt comes around 00.00
+	limit_reducer = now.second();
+	limit_reducer = limit_reducer + (now.minute() * 60);
+	limit_reducer = limit_reducer + (now.hour() * 60 * 60);
+	limit_reducer = (int) limit_reducer / 8;
+	limit = (limit - limit_reducer) + 1;
+
 	display.init(57600);
 	display.setRotation(1);
 	display.fillScreen(GxEPD_WHITE);
@@ -60,9 +73,12 @@ void loop()
 	display.powerOff();
 	display.hibernate();
 
-	// 10800 * 8s = 1d
-	for (int i = 0; i < 10800; i++)
+	for (int i = 0; i < limit; i++)
 		myWatchdogEnable (0b100001);  // 8 seconds
+
+	// reset limit to keep waking up around 00.00
+	// 10800 * 8s = 1d
+	limit = 10800;
 
 	sleep_disable();
 	power_all_enable();
@@ -95,13 +111,17 @@ void show()
 		showDef(days);
 }
 
-void showDef(char days[])
+void u8g2init()
 {
 	u8g2Fonts.setFontMode(1);
 	u8g2Fonts.setFontDirection(0);
 	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
 	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
-	u8g2Fonts.setFont(DEF_FONT);
+}
+
+void showDef(char days[])
+{
+	u8g2init();
 
 	display.firstPage();
 
@@ -115,10 +135,7 @@ void showDef(char days[])
 
 void showXmas(char days[])
 {
-	u8g2Fonts.setFontMode(1);
-	u8g2Fonts.setFontDirection(0);
-	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
-	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+	u8g2init();
 
 	display.firstPage();
 
@@ -136,10 +153,7 @@ void showXmas(char days[])
 
 void showNewYear(char days[])
 {
-	u8g2Fonts.setFontMode(1);
-	u8g2Fonts.setFontDirection(0);
-	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
-	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+	u8g2init();
 
 	display.firstPage();
 
@@ -158,10 +172,7 @@ void showNewYear(char days[])
 
 void showBday(char days[])
 {
-	u8g2Fonts.setFontMode(1);
-	u8g2Fonts.setFontDirection(0);
-	u8g2Fonts.setForegroundColor(GxEPD_BLACK);
-	u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+	u8g2init();
 
 	display.firstPage();
 
