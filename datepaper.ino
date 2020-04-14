@@ -29,7 +29,7 @@ GxEPD2_3C<GxEPD2_154c, MAX_HEIGHT_3C(GxEPD2_154c)> display(
 RTC_DS3231 rtc;
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
-const DateTime theDay (2018, 6, 18, 0, 0, 0);
+const DateTime theDay (2018, 6, 23, 0, 0, 0);
 // 10800 * 8s = 1d
 int limit = 10800;
 
